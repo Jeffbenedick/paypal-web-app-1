@@ -1,0 +1,42 @@
+node{
+  def mavenHome = tool name: 'maven 3.8.4'
+  stage('1.Clone'){
+    git branch: 'feature', credentialsId: 'Git_Credentials', url: 'https://github.com/Jeffbenedick/paypal-web-app-1'
+  }
+  stage('2.MavenBuild'){
+    sh "${mavenHome}/bin/mvn clean package"
+   // bat 'mvn package'
+  }
+  stage('3.CodeQuality'){
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+  }
+  stage('4.UploadArtifacts'){
+    sh "${mavenHome}/bin/mvn deploy"
+  }
+  stage('5.Deploy2Tomcatdev'){
+  deploy adapters: [tomcat9(credentialsId: 'tomcat_credentials', path: '', url: 'http://3.91.203.107:8080/')], contextPath: null, war: 'target/*war'
+  }
+  stage('6.Deploy2uat'){
+        sshagent(['ssh-tomcat_credential']){
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@3.91.203.107:/opt/tomcat9/webapps/app.war"
+  }
+}
+     stage('7.approval'){
+      timeout(time:8, unit:'HOURS'){
+        input message: 'Please approve deployment to Production'
+  }
+}
+  stage('6.Deploy2prod'){
+        sshagent(['ssh-tomcat_credential']){
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@3.91.203.107:/opt/tomcat9/webapps/app.war"
+  }            
+} 
+  stage('9.EmailAlerts'){
+      emailext body: '''Hi 
+
+Build status for boa app
+
+Regards,
+Jeffrey Benedick''', recipientProviders: [developers()], subject: 'Project status', to: 'jeffbenedick@gmail.com' 
+  }
+}
