@@ -26,7 +26,7 @@ node{
         input message: 'Please approve deployment to Production'
   }
 }
-  stage('6.Deploy2prod'){
+  stage('8.Deploy2prod'){
         sshagent(['ssh-tomcat_credential']){
         sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@3.91.203.107:/opt/tomcat9/webapps/app.war"
   }            
